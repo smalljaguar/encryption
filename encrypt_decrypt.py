@@ -1,3 +1,4 @@
+from math import log
 from string import ascii_lowercase
 from collections import Counter
 from typing import Iterable
@@ -27,6 +28,42 @@ def load_wordlist() -> list[str]:
 
 
 words = load_wordlist()
+
+# from https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words
+
+# Build a cost dictionary, assuming Zipf's law and cost = -math.log(probability).
+words = open("google-10000-english-no-swears.txt").read().split()
+wordcost = dict((k, log((i+1)*log(len(words)))) for i, k in enumerate(words))
+maxword = max(len(x) for x in words)
+
+
+def infer_spaces(s: str):
+    """Uses dynamic programming to infer the location of spaces in a string
+    without spaces."""
+
+    # Find the best match for the i first characters, assuming cost has
+    # been built for the i-1 first characters.
+    # Returns a pair (match_cost, match_length).
+    def best_match(i):
+        candidates = enumerate(reversed(cost[max(0, i-maxword):i]))
+        return min((c + wordcost.get(s[i-k-1:i], 9e999), k+1) for k, c in candidates)
+
+    # Build the cost array.
+    cost: list = [0]
+    for i in range(1, len(s)+1):
+        c, k = best_match(i)
+        cost.append(c)
+
+    # Backtrack to recover the minimal-cost string.
+    out = []
+    i = len(s)
+    while i > 0:
+        c, k = best_match(i)
+        assert c == cost[i]
+        out.append(s[i-k:i])
+        i -= k
+
+    return " ".join(reversed(out))
 
 
 def most_common(text: Iterable) -> list[tuple[str, int]]:
@@ -90,18 +127,18 @@ normalised_ref = normalised_common_ref()
 normalised_ref_pairwise = pair_normalised_common_ref()
 
 
-def find_cribs() -> set[str]:
-    rare_chars = list(
-        zip(*sorted(normalised_ref.items(), key=lambda x: x[1])))[0][:5]
-    cribs = set()
-    for word in words[:]:
-        for rare_char in rare_chars:
-            if rare_char in word:
-                cribs.add(word)
-    return cribs
+# def find_cribs() -> set[str]:
+#     rare_chars = list(
+#         zip(*sorted(normalised_ref.items(), key=lambda x: x[1])))[0][:5]
+#     cribs = set()
+#     for word in words[:]:
+#         for rare_char in rare_chars:
+#             if rare_char in word:
+#                 cribs.add(word)
+#     return cribs
 
 
-cribs = find_cribs()
+# cribs = find_cribs()
 
 
 def mean_abs_error(text) -> float:
@@ -287,7 +324,8 @@ def smart_vignere(text: str, keylen: int):
 
 def ultra_smart_substitution_decrypt(text: str, *cribs: str, is_deterministic: bool = False, rand_seed=64):
     # for consistency
-    random.seed(rand_seed)
+    if is_deterministic:
+        random.seed(rand_seed)
     # based on https://sci-hub.se/10.1080/0161-119591883944
     count = 0
     for char in ascii_lowercase:
@@ -331,8 +369,8 @@ def ultra_smart_substitution_decrypt(text: str, *cribs: str, is_deterministic: b
                 error = new_error
                 revert = 0
                 # n_combos = combos.copy()
-            if revert > 500:
-                print("cycles = ", x, "\n error = ", error, "\n")
+            if revert > 10000:  # tune this for speed against accuracy
+                print("cycles = ", x, "\n error = ", error, "\n", guess)
                 return text.translate(guess)
 
 
@@ -357,9 +395,12 @@ def multi():
 
 
 def main():
-    text = load_text("new_ciphertext").lower().replace("\n", " ")
-    decrypt = ultra_smart_substitution_decrypt(text, "bank", "chief")
-    print(decrypt, mean_abs_error(decrypt))
+    text = load_text("challenge-4-b").lower().replace("\n",
+                                                      " ").replace(" ", "")
+    decrypt = ultra_smart_substitution_decrypt(text, "unable")
+    if decrypt is None:
+        raise TypeError
+    print(infer_spaces(decrypt), mean_abs_error(decrypt))
     # for crib in cribs:
     #     if crib in decrypt:
     #         print(crib)
