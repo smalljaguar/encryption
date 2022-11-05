@@ -1,1 +1,26 @@
-dear ms frank i have been trying to contact ms smith to ask her some follow up questions about the operation of the vault but i have been unable to get hold of her and i am hoping you maybe able to help here mail is set to an out of office reply and she has apparently taken a few days leave no one at the bank seems to know where she has gone and there was no answer when i tried to visit her at home her mobile is also apparently offline but i appreciate that the signal around culpeper can be very poor so that is perhaps not significant if you have any idea where she might be then please do let me know if not then perhaps you can answer some questions for me the vault register tells me the dates on which each box is accessed and visitors sign in and out but no times are given is there areas on for that how long do clients typically spend in the vault and are they usually left alone the deposit boxes within the vault are each locked with their own key and i understand that the keys are held in ann as office who else has access to those keys some clients seem to have access to more than one box is that common there are seven hundred and six ty three boxes in the vault but the slides on the first forty three of them are clearly more worn than the others and although i was only given sight of the last few months records i noticed that no box number ed higher than forty is listed on the vault access register is this a co incidence and can the relationship between the access date and the box number that appears on these recent records really be a coincidence i had thought that the chinese characters might en code box numbers but since there are only nine binary characters on each box l in ing this would only en code a maximum of five hundred and twelve different box numbers is that number significant to the bank in some other way the most common entry in the vault register is the name tall mad ge do you have contact details for this person have you come across them before do they have any connection with anna smith one final thing i would like to bring in a consultant to work with me on this project his name is harry and i think his skills will be useful i will pay him from the fee you already agreed to pay me but he is currently staying in my hotel and if you agree to add him to the investigation then i would like you to take on his bill while i am not yet an x io us about ann as where about si would like to know as soon as s here surfaces and my queries above are quite urgent and extremely confidential i would be grateful if you could reply at your very earliest convenience and using avi gene rec ip her to ensure sec rec y yours jc
+dear Ms Frank I have been trying to contact ms Smith to ask her some follow up questions about the operation
+of the vault but I have been unable to get hold of her and I am hoping you maybe able to help here mail
+is set to an out of office reply and she has apparently taken a few days leave no one at the bank seems
+to know where she has gone and there was no answer when I tried to visit her at home her mobile is also
+apparently offline but I appreciate that the signal around culpeper can be very poor so that is perhaps
+not significant if you have any idea where she might be then please do let me know if not then perhaps
+you can answer some questions for me the vault register tells me the dates on which each box is accessed
+and visitors sign in and out but no times are given is there areas on for that how long do clients typically
+spend in the vault and are they usually left alone the deposit boxes within the vault are each locked
+with their own key and I understand that the keys are held in Anna's office who else has access to those
+keys some clients seem to have access to more than one box is that common? there are seven hundred and
+sixty three boxes in the vault but the slides on the first forty three of them are clearly more worn
+than the others and although I was only given sight of the last few months records I noticed that no
+box numbered higher than forty is listed on the vault access register. is this a coincidence and can
+the relationship between the access date and the box number that appears on these recent records really
+be a coincidence? I had thought that the chinese characters might encode box numbers but since there
+are only nine binary characters on each box lining this would only encode a maximum of five hundred
+and twelve different box numbers. is that number significant to the bank in some other way? the most common
+entry in the vault register is the name tallmadge. do you have contact details for this person? have
+you come across them before? do they have any connection with Anna smith? one final thing, I would like
+to bring in a consultant to work with me on this project. his name is Harry and I think his skills will
+be useful. I will pay him from the fee you already agreed to pay me, but he is currently staying in my
+hotel, and if you agree to add him to the investigation then I would like you to take on his bill. While
+i am not yet anxious about Anna's whereabouts I would like to know as soon as she resurfaces and
+my queries above are quite urgent and extremely confidential I would be grateful if you could reply at
+your very earliest convenience and using a vigenere cipher to ensure secrecy yours jc
