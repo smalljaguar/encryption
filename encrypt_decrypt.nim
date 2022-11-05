@@ -46,6 +46,37 @@ proc analyseVignere(text:string): int =
         if indexCoincidence(collect(for index in countup(0,text.high(),n): text[index]).join()) > 1.5:
             return n
 
+proc product(args:varargs[string], repetitions:int): seq[string] = 
+    # # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
+    # # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
+    # pools = [tuple(pool) for pool in args] * repeat
+    let pools = map(sequtils.repeat(args.join(),repetitions),(n) => $n)
+    # result = [[]]
+    var res:seq[seq[string]] = @[newSeq[string]()]
+    # for pool in pools:
+    for pool in pools:
+    #    result = [x+[y] for x in result for y in pool]
+        var temp:seq[seq[string]] = @[newSeq[string]()]
+        for x in res:
+            for y in pool:
+                temp.add(concat(x,@[$y]))
+        res = temp
+    # for prod in result:
+    return collect(for prod in res:prod.join())
+    #     yield tuple(prod)
+
+
+        
+
+proc bruteVignere(text:string,keylen:int):string = 
+    echo keylen
+    #~20s for 5 char key, ~2s for 4 char key with 800ish chars. If result looks like gibberish, caesardecrypt it
+    for possibleKey in product(alphabet,keylen):
+        if len(possibleKey) == keylen and indexCoincidence(vignereDecrypt(text,possibleKey)) > 1.5: #can change comparison param when necessary
+            echo possibleKey, indexCoincidence(vignereDecrypt(text,possibleKey))
+            return vignereDecrypt(text,possibleKey)
+    echo "\nall keys exhausted"
+        
 
 assert filterLower(r"ABCabcZZZ.><.??.\\\\////") == "abc"
 
@@ -55,7 +86,11 @@ assert vignereDecrypt("lxfopvefrnhr","lemon") == "attackatdawn"
 assert caesarEncrypt("avecaesar", 3) == "dyhfdhvdu"
 assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 
+echo "plaintext:\n", filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..10000]
+
+let encrypted = vignereEncrypt(filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..10000],"lem")
+echo caesarDecrypt(bruteVignere(encrypted,analyseVignere(encrypted)),11)
+
 when defined(test):
     echo caesarEncrypt(readFile("holmes-gutenberg.txt"),10)
     echo indexCoincidence(filterLower(readFile("holmes-gutenberg.txt"))) # around 1.7
-    echo analyseVignere(vignereEncrypt(filterLower(readFile("holmes-gutenberg.txt")),"lemonsandlime"))
