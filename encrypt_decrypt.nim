@@ -5,7 +5,7 @@ import std/tables
 import std/re
 
 const BASE = ord("a"[0])
-let alphabetSeq = collect(for num in BASE..BASE+25: $chr(num))
+# let alphabetSeq = collect(for num in BASE..BASE+25: $chr(num))
 let alphabet = collect(for num in BASE..BASE+25: $chr(num)).join()
 
 func translateText(text: string, transDict: seq[(string,string)]): string =
@@ -40,6 +40,11 @@ func vignereEncrypt(text:string, key:string): string =
 func vignereDecrypt(text:string, key:string): string =
     return collect(for (char1, char2) in zip(text,cycle(key,len(text)).join): chr((((ord(char1)-ord(char2)) + 26) mod 26) + BASE)).join()
 
+proc analyseVignere(text:string): int = 
+    # returns a guess of keylen using ioc ~1.7 as natural english
+    for n in 1..text.high():
+        if indexCoincidence(collect(for index in countup(0,text.high(),n): text[index]).join()) > 1.5:
+            return n
 
 
 assert filterLower(r"ABCabcZZZ.><.??.\\\\////") == "abc"
@@ -53,3 +58,4 @@ assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 when defined(test):
     echo caesarEncrypt(readFile("holmes-gutenberg.txt"),10)
     echo indexCoincidence(filterLower(readFile("holmes-gutenberg.txt"))) # around 1.7
+    echo analyseVignere(vignereEncrypt(filterLower(readFile("holmes-gutenberg.txt")),"lemonsandlime"))
