@@ -38,17 +38,10 @@ proc caesarDecrypt(text: string, shift: int): string =
 proc absError(text: string): float =
     # real text is around 0.2, but can put below 0.5 to be safe?
     let sourceText = filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))
-    # common_text = most_common(text)
     let sourceCounter = toCountTable(sourceText)
     let textCounter = toCountTable(text)
-    #     error = 0.0
     var error: float
-    # total_chars = len(
-    #     [char for char in text if char in ascii_lowercase])
     let totalChars = len(text)
-    # normalised_text = dict([(char, count/total_chars)
-    #                         for (char, count) in common_text if char in ascii_lowercase])
-    # for key in normalised_text:
     for key in textCounter.keys():
         error += abs(sourceCounter[key]/len(sourceText) - textCounter[
                 key]/totalChars)
@@ -81,21 +74,17 @@ proc analyseVignere(text: string): int =
 func product(args: varargs[string], repetitions: int): seq[string] =
     # # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
     # # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
-    # pools = [tuple(pool) for pool in args] * repeat
+    # shamelessly stolen from python itertools
     let pools = map(sequtils.repeat(args.join(), repetitions), (n) => $n)
-    # result = [[]]
     var res: seq[seq[string]] = @[newSeq[string]()]
-    # for pool in pools:
     for pool in pools:
-    #    result = [x+[y] for x in result for y in pool]
         var temp: seq[seq[string]] = @[newSeq[string]()]
         for x in res:
             for y in pool:
                 temp.add(concat(x, @[$y]))
         res = temp
-    # for prod in result:
     return collect(for prod in res: prod.join())
-    #     yield tuple(prod)
+
 
 proc bruteVignere(text: string, keylen: int): string =
     #~20s for 5 char key, ~2s for 4 char key with 800ish chars. If result looks like gibberish, caesardecrypt it
@@ -123,7 +112,7 @@ assert caesarEncrypt("avecaesar", 3) == "dyhfdhvdu"
 assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 
 proc test() =
-    # echo caesarEncrypt(readFile("holmes-gutenberg.txt"),10)
+    discard caesarEncrypt(readFile("holmes-gutenberg.txt"),10)
     echo indexCoincidence(filterLower(readFile("holmes-gutenberg.txt"))) # around 1.7
     let plaintext = filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..1000]
     echo "plaintext:\n", plaintext
