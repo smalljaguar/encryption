@@ -25,14 +25,40 @@ proc indexCoincidence(text:string):float =
     return float(ioc)/denom
 
 proc caesarEncrypt(text: string, shift: int): string =
+    if shift mod 26 == 0:
+        return text
     let shiftedAlpha = alphabet[shift..alphabet.high] & alphabet[0..shift]
     let alphaSeq:seq[string] = alphabet.mapIt($it)
     let transDict = zip(alphaSeq,collect(for letter in shiftedAlpha: $letter))
     return translateText(text,transDict)
 
-
 proc caesarDecrypt(text: string, shift: int): string =
     return caesarEncrypt(text, -shift+26)
+
+proc absError(text:string):float = 
+    # real text is around 0.2, but can put below 0.5 to be safe? 
+    let sourceText = filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))
+    # common_text = most_common(text)
+    let sourceCounter = toCountTable(sourceText)
+    let textCounter = toCountTable(text)
+    #     error = 0.0
+    var error: float
+    # total_chars = len(
+    #     [char for char in text if char in ascii_lowercase])
+    let totalChars = len(text)
+    # normalised_text = dict([(char, count/total_chars)
+    #                         for (char, count) in common_text if char in ascii_lowercase])
+    # for key in normalised_text:
+    for key in textCounter.keys():
+        error += abs(sourceCounter[key]/len(sourceText) - textCounter[key]/totalChars)
+    return error
+
+proc smartCaesarDecrypt(text: string): string = 
+    for shift in 0..25:
+        let plaintext = caesarDecrypt(text,shift)
+        if absError(plaintext) < 0.4:
+            return plaintext
+    echo "no solutions"
 
 func vignereEncrypt(text:string, key:string): string =
     return collect(for (char1, char2) in zip(text,cycle(key,len(text)).join): chr(((ord(char1)+ord(char2)-BASE-BASE) mod 26) + BASE)).join()
@@ -66,7 +92,6 @@ func product(args:varargs[string], repetitions:int): seq[string] =
     #     yield tuple(prod)
 
 proc bruteVignere(text:string,keylen:int):string = 
-    echo keylen
     #~20s for 5 char key, ~2s for 4 char key with 800ish chars. If result looks like gibberish, caesardecrypt it
     for possibleKey in product(alphabet,keylen):
         if len(possibleKey) == keylen and indexCoincidence(vignereDecrypt(text,possibleKey)) > 1.7: #can change comparison param when necessary
@@ -94,6 +119,6 @@ when defined(test):
     echo indexCoincidence(filterLower(readFile("holmes-gutenberg.txt"))) # around 1.7
     let plaintext = filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..1000]
     echo "plaintext:\n", plaintext
-    let encrypted = vignereEncrypt(plaintext,"loop")
-    echo wordlistVignere(encrypted,analyseVignere(encrypted))
-    echo caesarDecrypt(bruteVignere(encrypted,analyseVignere(encrypted)),11)
+    let encrypted = vignereEncrypt(plaintext,"beef")
+    echo smartCaesarDecrypt(wordlistVignere(encrypted,analyseVignere(encrypted)))
+    echo smartCaesarDecrypt(bruteVignere(encrypted,analyseVignere(encrypted)))
