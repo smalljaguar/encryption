@@ -301,9 +301,10 @@ def brute_affine_decrypt(ciphertext: str) -> str | None:
 
 
 def vignere_encrypt(text, key):
+    filter_text = "".join([char for char in text if char in ascii_lowercase])
     return "".join([chr(((ord(char_1)+ord(char_2)-BASE-BASE) %
                          26) + BASE) for (char_1, char_2) in
-                    zip((char for char in text if char in ascii_lowercase), cycle(key))])
+                    zip(filter_text, cycle(key))])
     # oneliner, hell yeah!! fuck you future me!! (assumes both are lowercase, ur fault if you don't preprocess)
     # https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher#Algebraic_description
 
@@ -316,6 +317,7 @@ def vignere_decrypt(text, key):
 def smart_vignere(text: str, keylen: int):
     """
     Ignore for now
+    use https://www.cipherchallenge.org/wp-content/uploads/2020/12/Five-ways-to-crack-a-Vigenere-cipher.pdf
     """
     parts = [text[start::keylen].ljust((len(text)//keylen)+1)
              for start in range(keylen)]
@@ -395,8 +397,8 @@ def multi():
 
 
 def main():
-    text = load_text("challenge-4-b").lower().replace("\n",
-                                                      " ").replace(" ", "")
+    text = load_text("ciphertext/challenge-4-b").lower().replace("\n",
+                                                                 " ").replace(" ", "")
     decrypt = ultra_smart_substitution_decrypt(text, "unable")
     if decrypt is None:
         raise TypeError
