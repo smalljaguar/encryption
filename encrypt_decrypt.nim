@@ -46,7 +46,7 @@ proc analyseVignere(text:string): int =
         if indexCoincidence(collect(for index in countup(0,text.high(),n): text[index]).join()) > 1.5:
             return n
 
-proc product(args:varargs[string], repetitions:int): seq[string] = 
+func product(args:varargs[string], repetitions:int): seq[string] = 
     # # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
     # # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
     # pools = [tuple(pool) for pool in args] * repeat
@@ -65,18 +65,21 @@ proc product(args:varargs[string], repetitions:int): seq[string] =
     return collect(for prod in res:prod.join())
     #     yield tuple(prod)
 
-
-        
-
 proc bruteVignere(text:string,keylen:int):string = 
     echo keylen
     #~20s for 5 char key, ~2s for 4 char key with 800ish chars. If result looks like gibberish, caesardecrypt it
     for possibleKey in product(alphabet,keylen):
-        if len(possibleKey) == keylen and indexCoincidence(vignereDecrypt(text,possibleKey)) > 1.5: #can change comparison param when necessary
+        if len(possibleKey) == keylen and indexCoincidence(vignereDecrypt(text,possibleKey)) > 1.7: #can change comparison param when necessary
             echo possibleKey, indexCoincidence(vignereDecrypt(text,possibleKey))
             return vignereDecrypt(text,possibleKey)
     echo "\nall keys exhausted"
         
+proc wordlistVignere(text:string,keylen:int): string = 
+    for line in lines("google-10000-english-no-swears.txt"):
+        if len(line) == keylen and indexCoincidence(vignereDecrypt(text,line)) > 1.7: #can change comparison param when necessary
+            echo line, indexCoincidence(vignereDecrypt(text,line))
+            return vignereDecrypt(text,line)
+    echo "\nall keys exhausted"
 
 assert filterLower(r"ABCabcZZZ.><.??.\\\\////") == "abc"
 
@@ -86,11 +89,11 @@ assert vignereDecrypt("lxfopvefrnhr","lemon") == "attackatdawn"
 assert caesarEncrypt("avecaesar", 3) == "dyhfdhvdu"
 assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 
-echo "plaintext:\n", filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..10000]
-
-let encrypted = vignereEncrypt(filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..10000],"lem")
-echo caesarDecrypt(bruteVignere(encrypted,analyseVignere(encrypted)),11)
-
 when defined(test):
-    echo caesarEncrypt(readFile("holmes-gutenberg.txt"),10)
+    # echo caesarEncrypt(readFile("holmes-gutenberg.txt"),10)
     echo indexCoincidence(filterLower(readFile("holmes-gutenberg.txt"))) # around 1.7
+    let plaintext = filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..1000]
+    echo "plaintext:\n", plaintext
+    let encrypted = vignereEncrypt(plaintext,"loop")
+    echo wordlistVignere(encrypted,analyseVignere(encrypted))
+    echo caesarDecrypt(bruteVignere(encrypted,analyseVignere(encrypted)),11)
