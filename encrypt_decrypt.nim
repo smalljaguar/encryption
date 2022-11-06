@@ -40,10 +40,12 @@ proc tetraScore(text:string):float =
 func translateText(text: string, transDict: seq[(string, string)]): string =
     return multiReplace(text, transDict)
 
-proc filterLower(text: string, removeSpaces:bool): string {.inline.} =
+proc filterLower(text: string, removeSpaces:bool = false): string {.inline.} =
     # filter_text = regex to remove all non a-z
-    let filterText = toLowerAscii(re.replace(text, re"[^a-z ]", ""))
-    return filterText
+    if removeSpaces:
+        return toLowerAscii(re.replace(text,re"^[a-z]",""))
+    else:
+        return toLowerAscii(re.replace(text, re"[^a-z ]", ""))
 
 proc indexCoincidence(text: string): float =
     let counter = toCountTable(text)
@@ -66,7 +68,7 @@ proc caesarDecrypt(text: string, shift: int): string =
 
 proc absError(text: string): float =
     # real text is around 0.2, but can put below 0.5 to be safe?
-    let sourceText = filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))
+    let sourceText = filterLower(readFile("holmes-gutenberg.txt"),true)
     let sourceCounter = toCountTable(sourceText)
     let textCounter = toCountTable(text)
     var error: float
@@ -147,7 +149,7 @@ assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 
 
 proc test() =
-    let plaintext = filterLower(readFile("holmes-gutenberg.txt"))
+    let plaintext = filterLower(readFile("holmes-gutenberg.txt"),false)
     discard caesarEncrypt(plaintext,10)
     echo indexCoincidence(plaintext) # around 1.7
     echo tetraScore(plaintext)
