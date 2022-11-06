@@ -1,19 +1,48 @@
-import std/strutils
-import std/sugar
-import std/sequtils
-import std/tables
-import std/re
+import strutils
+import sugar
+import sequtils
+import tables
+import re
+import math
 
 const BASE = ord("a"[0])
 # let alphabetSeq = collect(for num in BASE..BASE+25: $chr(num))
 let alphabet = collect(for num in BASE..BASE+25: $chr(num)).join()
 
+proc loadTetragrams(): Table[string,float] = 
+    var tetraTable: Table[string, float]
+    for line in lines("english_quadgrams.txt"):
+        let splitLine = line.split()
+        let tetra = toLowerAscii(splitLine[0])
+        let tetraCount  = parseFloat(splitline[1])
+        tetraTable[tetra] = tetraCount
+    return tetraTable
+
+proc normaliseTetragrams(tetraTable:Table[string,float]):Table[string,float] = 
+    let totalCount = sum(tetraTable.values().toSeq())
+    var newTable = tetraTable
+    for key in newTable.keys():
+        newTable[key] = float(log10(float(newTable[key])/totalCount))
+    return newTable
+
+let tetraTable = normaliseTetragrams(loadTetragrams())
+
+proc tetraScore(text:string):float =
+    # should be <-6 for real text?
+    var score:float = 0
+    for i in 0..len(text)-(4): 
+        if text[i..i+3] in tetraTable:
+            score = score + tetraTable[text[i..i+3]]
+        else:
+            score = score + log10(1/(4*100))
+    return score/float(len(text))
+
 func translateText(text: string, transDict: seq[(string, string)]): string =
     return multiReplace(text, transDict)
 
-proc filterLower(text: string): string {.inline.} =
+proc filterLower(text: string, removeSpaces:bool): string {.inline.} =
     # filter_text = regex to remove all non a-z
-    let filterText = toLowerAscii(re.replace(text, re"[^a-z]", ""))
+    let filterText = toLowerAscii(re.replace(text, re"[^a-z ]", ""))
     return filterText
 
 proc indexCoincidence(text: string): float =
@@ -56,12 +85,16 @@ proc smartCaesarDecrypt(text: string): string =
 
 func vignereEncrypt(text: string, key: string): string =
     return collect(for (char1, char2) in zip(text, cycle(key, len(
-            text)).join): chr(((ord(char1)+ord(char2)-BASE-BASE) mod 26) +
-            BASE)).join()
+            text)).join): 
+                if char1==" "[0]: char1
+                else: chr(((ord(char1)+ord(char2)-BASE-BASE) mod 26) +
+                BASE)).join()
 
 func vignereDecrypt(text: string, key: string): string =
     return collect(for (char1, char2) in zip(text, cycle(key, len(
-            text)).join): chr((((ord(char1)-ord(char2)) + 26) mod 26) +
+            text)).join):
+            if char1==" "[0]: char1
+            else: chr((((ord(char1)-ord(char2)) + 26) mod 26) +
             BASE)).join()
 
 proc analyseVignere(text: string): int =
@@ -87,8 +120,9 @@ func product(args: varargs[string], repetitions: int): seq[string] =
 
 
 proc bruteVignere(text: string, keylen: int): string =
-    #~20s for 5 char key, ~2s for 4 char key with 800ish chars. If result looks like gibberish, caesardecrypt it
-    for possibleKey in product(alphabet, keylen):
+    #~20s for 5 char key, ~2s for 4 char key , ~30s for 5char key with 800ish chars.  If result looks like gibberish, caesardecrypt it
+    for possibleKey in product(alphabet, keylen-1):
+        let possibleKey = "a" & possibleKey
         if len(possibleKey) == keylen and indexCoincidence(vignereDecrypt(text,
                 possibleKey)) > 1.7: #can change comparison param when necessary
             echo possibleKey, indexCoincidence(vignereDecrypt(text, possibleKey))
@@ -111,12 +145,14 @@ assert vignereDecrypt("lxfopvefrnhr", "lemon") == "attackatdawn"
 assert caesarEncrypt("avecaesar", 3) == "dyhfdhvdu"
 assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 
+
 proc test() =
-    discard caesarEncrypt(readFile("holmes-gutenberg.txt"),10)
-    echo indexCoincidence(filterLower(readFile("holmes-gutenberg.txt"))) # around 1.7
-    let plaintext = filterLower(toLowerAscii(readFile("holmes-gutenberg.txt")))[0..1000]
-    echo "plaintext:\n", plaintext
-    let encrypted = vignereEncrypt(plaintext, "beef")
+    let plaintext = filterLower(readFile("holmes-gutenberg.txt"))
+    discard caesarEncrypt(plaintext,10)
+    echo indexCoincidence(plaintext) # around 1.7
+    echo tetraScore(plaintext)
+    echo "plaintext:\n", plaintext[0..1000]
+    let encrypted = vignereEncrypt(plaintext[0..1000], "lemon")
     echo smartCaesarDecrypt(wordlistVignere(encrypted, analyseVignere(encrypted)))
     echo smartCaesarDecrypt(bruteVignere(encrypted, analyseVignere(encrypted)))
 
