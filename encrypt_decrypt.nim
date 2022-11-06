@@ -4,6 +4,7 @@ import sequtils
 import tables
 import re
 import math
+import sets
 
 const BASE = ord("a"[0])
 # let alphabetSeq = collect(for num in BASE..BASE+25: $chr(num))
@@ -43,13 +44,14 @@ func translateText(text: string, transDict: seq[(string, string)]): string =
 proc filterLower(text: string, removeSpaces:bool = false): string {.inline.} =
     # filter_text = regex to remove all non a-z
     if removeSpaces:
-        return toLowerAscii(re.replace(text,re"^[a-z]",""))
+        return re.replace(toLowerAscii(text),re"^[a-z]","")
     else:
-        return toLowerAscii(re.replace(text, re"[^a-z ]", ""))
+        return re.replace(toLowerAscii(text), re"[^a-z ]", "")
 
 proc indexCoincidence(text: string): float =
-    let counter = toCountTable(text)
-    let denom = len(text)*(len(text)+1)/26
+    let cleanText = re.replace(text,re" ","")
+    let counter = toCountTable(cleanText)
+    let denom = (len(cleanText)*(len(cleanText)+1))/26
     var iOC = 0
     for key, value in counter.pairs():
         ioc += value*(value-1)
@@ -99,11 +101,30 @@ func vignereDecrypt(text: string, key: string): string =
             else: chr((((ord(char1)-ord(char2)) + 26) mod 26) +
             BASE)).join()
 
+proc monoSubEncrypt(text:string, key:string):string =
+    let strAlphabet: seq[string] = alphabet.toSeq().mapIt( $it ) 
+    var dedupedkey = toOrderedSet(filterLower(key).toSeq()).toSeq().mapIt( $it )
+    for letter in strAlphabet:
+        if not dedupedkey.contains(letter):
+            dedupedkey.add(letter)
+    let transTable = zip(dedupedkey,strAlphabet)
+    return translateText(text,transTable)
+
+proc monoSubDecrypt(text:string, key:string): string = 
+    let strAlphabet: seq[string] = alphabet.toSeq().mapIt( $it ) 
+    var dedupedkey = toOrderedSet(filterLower(key).toSeq()).toSeq().mapIt( $it )
+    for letter in strAlphabet:
+        if not dedupedkey.contains(letter):
+            dedupedkey.add(letter)
+    let transTable = zip(strAlphabet,dedupedkey)
+    return translateText(text,transTable)
+
+
 proc analyseVignere(text: string): int =
     # returns a guess of keylen using ioc ~1.7 as natural english
     for n in 1..text.high():
         if indexCoincidence(collect(for index in countup(0, text.high(),
-                n): text[index]).join()) > 1.5:
+                n): text[index]).join()) > 1.7:
             return n
 
 func product(args: varargs[string], repetitions: int): seq[string] =
@@ -139,7 +160,7 @@ proc wordlistVignere(text: string, keylen: int): string =
             return vignereDecrypt(text, line)
     echo "\nall keys exhausted"
 
-assert filterLower(r"ABCabcZZZ.><.??.\\\\////") == "abc"
+assert filterLower(r"aBc.><.??.\\\\////") == "abc"
 
 assert vignereEncrypt("attackatdawn", "lemon") == "lxfopvefrnhr"
 assert vignereDecrypt("lxfopvefrnhr", "lemon") == "attackatdawn"
@@ -154,9 +175,10 @@ proc test() =
     echo indexCoincidence(plaintext) # around 1.7
     echo tetraScore(plaintext)
     echo "plaintext:\n", plaintext[0..1000]
-    let encrypted = vignereEncrypt(plaintext[0..1000], "lemon")
+    let encrypted = vignereEncrypt(plaintext[0..1000], "beef")
     echo smartCaesarDecrypt(wordlistVignere(encrypted, analyseVignere(encrypted)))
     echo smartCaesarDecrypt(bruteVignere(encrypted, analyseVignere(encrypted)))
+    echo monoSubDecrypt(monoSubEncrypt("attackatdawnavecaesar","lemonbeef"),"lemonbeef")
 
 when defined(test):
     test()
