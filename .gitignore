@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# nim compiled exe
-.exe
+# nim
+*.exe
+nim.cfg
 
 #vs code
 .vscode/

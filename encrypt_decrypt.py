@@ -397,7 +397,8 @@ def multi():
 
 
 def main():
-    text = load_text("ciphertexts/challenge-4-b").lower().replace("\n", " ").replace(" ", "")
+    text = load_text(
+        "ciphertexts/challenge-4-b").lower().replace("\n", " ").replace(" ", "")
     decrypt = ultra_smart_substitution_decrypt(text, "unable")
     if decrypt is None:
         raise TypeError

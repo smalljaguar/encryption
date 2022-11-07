@@ -1,3 +1,5 @@
+#use gc:arc 
+
 import strutils
 import sugar
 import sequtils
@@ -5,6 +7,7 @@ import tables
 import re
 import math
 import sets
+import std/enumerate
 
 const BASE = ord("a"[0])
 # let alphabetSeq = collect(for num in BASE..BASE+25: $chr(num))
@@ -124,8 +127,23 @@ proc analyseVignere(text: string): int =
     # returns a guess of keylen using ioc ~1.7 as natural english
     for n in 1..text.high():
         if indexCoincidence(collect(for index in countup(0, text.high(),
-                n): text[index]).join()) > 1.7:
+                n): text[index]).join()) > 1.55:
             return n
+
+iterator iterProduct(args: varargs[string], repetitions: int): string =
+    # # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
+    # # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
+    # shamelessly stolen from python itertools
+    let pools = map(sequtils.repeat(args.join(), repetitions), (n) => $n)
+    var res: seq[seq[string]] = @[newSeq[string]()]
+    for count, pool in enumerate(pools):
+        var temp: seq[seq[string]] = @[newSeq[string]()]
+        for x in res:
+            for y in pool:
+                if count == (repetitions-1):
+                    yield (concat(x, @[$y]).join()) 
+                temp.add(concat(x, @[$y]))
+        res = temp
 
 func product(args: varargs[string], repetitions: int): seq[string] =
     # # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
@@ -144,7 +162,7 @@ func product(args: varargs[string], repetitions: int): seq[string] =
 
 proc bruteVignere(text: string, keylen: int): string =
     #~20s for 5 char key, ~2s for 4 char key , ~30s for 5char key with 800ish chars.  If result looks like gibberish, caesardecrypt it
-    for possibleKey in product(alphabet, keylen-1):
+    for possibleKey in iterProduct(alphabet, keylen-1):
         let possibleKey = "a" & possibleKey
         if len(possibleKey) == keylen and indexCoincidence(vignereDecrypt(text,
                 possibleKey)) > 1.7: #can change comparison param when necessary
@@ -175,10 +193,10 @@ proc test() =
     echo indexCoincidence(plaintext) # around 1.7
     echo tetraScore(plaintext)
     echo "plaintext:\n", plaintext[0..1000]
-    let encrypted = vignereEncrypt(plaintext[0..1000], "beef")
+    let encrypted = vignereEncrypt(plaintext[0..1000], "lemon")
     echo smartCaesarDecrypt(wordlistVignere(encrypted, analyseVignere(encrypted)))
     echo smartCaesarDecrypt(bruteVignere(encrypted, analyseVignere(encrypted)))
-    echo monoSubDecrypt(monoSubEncrypt("attackatdawnavecaesar","lemonbeef"),"lemonbeef")
+    assert monoSubDecrypt(monoSubEncrypt("attackatdawnavecaesar","lemonbeef"),"lemonbeef") == "attackatdawnavecaesar"
 
 when defined(test):
     test()
