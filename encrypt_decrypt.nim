@@ -1,5 +1,5 @@
-#use gc:arc 
-
+#use gc:arc/orc for speeeeeeeed
+#http://practicalcryptography.com/cryptanalysis/ for reference
 import strutils
 import sugar
 import sequtils
@@ -83,6 +83,21 @@ proc absError(text: string): float =
                 key]/totalChars)
     return error
 
+proc chiSquared(text: string): float =
+    # real text is around 0.2, but can put below 0.5 to be safe?
+    let sourceText = filterLower(readFile("holmes-gutenberg.txt"),true)
+    let sourceCounter = toCountTable(sourceText)
+    let textCounter = toCountTable(text)
+    var error: float
+    let totalChars = len(text)
+    for key in textCounter.keys():
+        error += ((sourceCounter[key]/len(sourceText) - textCounter[
+                key]/totalChars)^2)/float(textCounter[
+                key]/totalChars)
+    return error
+
+
+
 proc smartCaesarDecrypt(text: string): string =
     for shift in 0..25:
         let plaintext = caesarDecrypt(text, shift)
@@ -161,6 +176,7 @@ func product(args: varargs[string], repetitions: int): seq[string] =
 
 
 proc bruteVignere(text: string, keylen: int): string =
+    #TODO: add multithreading
     #~20s for 5 char key, ~2s for 4 char key , ~30s for 5char key with 800ish chars.  If result looks like gibberish, caesardecrypt it
     for possibleKey in iterProduct(alphabet, keylen-1):
         let possibleKey = "a" & possibleKey
@@ -169,6 +185,15 @@ proc bruteVignere(text: string, keylen: int): string =
             echo possibleKey, indexCoincidence(vignereDecrypt(text, possibleKey))
             return vignereDecrypt(text, possibleKey)
     echo "\nall keys exhausted"
+
+proc smartVignere(text:string, keylen:int):string =
+    var sequences: seq[string]
+    var plaintext: string
+    for start in 0..(keylen-1):
+        sequences.add(smartCaesarDecrypt(collect(for index in countup(start,len(text)-1,keylen): text[index]).join()))
+    for index in 0..len(text)-1:
+        plaintext.add(sequences[index mod keylen][index div keylen])
+    return plaintext
 
 proc wordlistVignere(text: string, keylen: int): string =
     for line in lines("google-10000-english-no-swears.txt"):
@@ -188,14 +213,14 @@ assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 
 
 proc test() =
-    let plaintext = filterLower(readFile("holmes-gutenberg.txt"),false)
+    let plaintext = filterLower(readFile("holmes-gutenberg.txt"),false)[0..10000]
     discard caesarEncrypt(plaintext,10)
     echo indexCoincidence(plaintext) # around 1.7
     echo tetraScore(plaintext)
     echo "plaintext:\n", plaintext[0..1000]
-    let encrypted = vignereEncrypt(plaintext[0..1000], "lemon")
-    echo smartCaesarDecrypt(wordlistVignere(encrypted, analyseVignere(encrypted)))
-    echo smartCaesarDecrypt(bruteVignere(encrypted, analyseVignere(encrypted)))
+    let encrypted = vignereEncrypt(plaintext, "lemon")
+    assert smartVignere(encrypted,analyseVignere(encrypted)) == plaintext
+    assert smartCaesarDecrypt(wordlistVignere(encrypted, analyseVignere(encrypted))) == plaintext
     assert monoSubDecrypt(monoSubEncrypt("attackatdawnavecaesar","lemonbeef"),"lemonbeef") == "attackatdawnavecaesar"
 
 when defined(test):
