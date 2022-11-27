@@ -8,10 +8,18 @@ import re
 import math
 import sets
 import std/enumerate
+import algorithm
 
 const BASE = ord("a"[0])
 # let alphabetSeq = collect(for num in BASE..BASE+25: $chr(num))
 let alphabet = collect(for num in BASE..BASE+25: $chr(num)).join()
+
+proc pairMin(x: seq[(float,int)]): (float,int) =
+  ## The minimum value of `x`. `T` needs to have a `<` operator.
+  var currMin = x[0][0]
+  result = x[0]
+  for i in 1..high(x):
+    if x[i][0] < currMin: result = x[i]
 
 proc loadTetragrams(): Table[string,float] = 
     var tetraTable: Table[string, float]
@@ -96,6 +104,63 @@ proc chiSquared(text: string): float =
                 key]/totalChars)
     return error
 
+# # from https://stackoverflow.com/questions/8870261/how-to-split-text-without-spaces-into-list-of-words
+
+# # Build a cost dictionary, assuming Zipf's law and cost = -math.log(probability).
+# words = open("google-10000-english-no-swears.txt").read().split()
+let words = readFile("google-10000-english-no-swears.txt").split()
+# wordcost = dict((k, log((i+1)*log(len(words)))) for i, k in enumerate(words))
+let wordcost = collect(for (i,k) in enumerate(words): (k, log10(float(i+1)*log10(float(len(words)))))).toTable()
+# maxword = max(len(x) for x in words)
+let maxword = max(map(words,word=>len(word)))
+echo "maxword: ", maxword
+
+# def infer_spaces(s: str):
+proc inferSpaces(text:string):string = 
+#     Uses dynamic programming to infer the location of spaces in a string
+#     without spaces.
+#     cost: list = [0]
+    var cost = @[0.0]
+#     # Find the best match for the i first characters, assuming cost has
+#     # been built for the i-1 first characters.
+#     # Returns a pair (match_cost, match_length).
+#     def best_match(i):
+    proc bestMatch(idx:int,cost:seq[float]): (float,int) = 
+        let candidates = pairs(cost[max(0,idx-maxword)..min(idx,len(cost)-1)].reversed()).toSeq()
+#         candidates = enumerate(reversed(cost[max(0, i-maxword):i]))
+#       how to get min of pairs from first items???
+        return pairMin(collect(for (k, c) in candidates: (float(c) + wordcost.getOrDefault($(text[idx-k-1..idx]), 1e20), (k+1)) ))
+#         return min((c + wordcost.get(s[i-k-1:i], 9e999), k+1) for k, c in candidates)
+
+#     # Build the cost array.
+#     for i in range(1, len(s)+1):
+
+    for i in 1..len(text):
+        if i > 998:
+            echo "cost ", cost
+            echo "i ", i
+        let (c,k) = bestMatch(i,cost)
+#         c, k = best_match(i)
+        cost.add(c)
+#         cost.append(c)
+
+#     # Backtrack to recover the minimal-cost string.
+#     output = []
+    var output: seq[string] = @[] 
+#     i = len(s)
+    var i = len(text)
+#     while i > 0:
+    while i > 0:
+        let (c,k) = bestMatch(i,cost)
+#         c, k = best_match(i)
+        assert c == cost[i]
+#         assert c == cost[i]
+        output.add( $(text[i-k..i]) )
+#         output.append(s[i-k:i])
+        i = i-k
+#         i -= k
+    return join(output.reversed()," ")
+#     return " ".join(reversed(out))
 
 
 proc smartCaesarDecrypt(text: string): string =
@@ -182,7 +247,6 @@ proc bruteVignere(text: string, keylen: int): string =
         let possibleKey = "a" & possibleKey
         if len(possibleKey) == keylen and indexCoincidence(vignereDecrypt(text,
                 possibleKey)) > 1.7: #can change comparison param when necessary
-            echo possibleKey, indexCoincidence(vignereDecrypt(text, possibleKey))
             return vignereDecrypt(text, possibleKey)
     echo "\nall keys exhausted"
 
@@ -198,8 +262,7 @@ proc smartVignere(text:string, keylen:int):string =
 proc wordlistVignere(text: string, keylen: int): string =
     for line in lines("google-10000-english-no-swears.txt"):
         if len(line) == keylen and indexCoincidence(vignereDecrypt(text,
-                line)) > 1.7: #can change comparison param when necessary
-            echo line, indexCoincidence(vignereDecrypt(text, line))
+                line)) > 1.65: #can change comparison param when necessary
             return vignereDecrypt(text, line)
     echo "\nall keys exhausted"
 
@@ -213,13 +276,14 @@ assert caesarDecrypt("dyhfdhvdu", 3) == "avecaesar"
 
 
 proc test() =
-    let plaintext = filterLower(readFile("holmes-gutenberg.txt"),false)[0..10000]
+    let plaintext = filterLower(readFile("holmes-gutenberg.txt"),false)[0..1000]
     discard caesarEncrypt(plaintext,10)
     echo indexCoincidence(plaintext) # around 1.7
     echo tetraScore(plaintext)
     echo "plaintext:\n", plaintext[0..1000]
-    let encrypted = vignereEncrypt(plaintext, "lemon")
+    let encrypted = vignereEncrypt(plaintext, "vulcans")
     assert smartVignere(encrypted,analyseVignere(encrypted)) == plaintext
+    echo inferSpaces(filterLower(plaintext,true))
     assert smartCaesarDecrypt(wordlistVignere(encrypted, analyseVignere(encrypted))) == plaintext
     assert monoSubDecrypt(monoSubEncrypt("attackatdawnavecaesar","lemonbeef"),"lemonbeef") == "attackatdawnavecaesar"
 
