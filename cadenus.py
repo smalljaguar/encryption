@@ -1,3 +1,4 @@
+from math import log
 import random
 from encrypt_decrypt import nwise
 from encrypt_decrypt import pair_normalised_common_ref
@@ -83,12 +84,12 @@ pair_ref = pair_normalised_common_ref(4)
 
 
 def fitness(text):
-    textcount = {key: count/len(text)
+    textcount = {key: count
                  for key, count in Counter(nwise(text, n=4)).items()}
     error = 0
     for key in pair_ref:
         if key in textcount:
-            error += abs(pair_ref[key]-textcount[key])
+            error += abs(log(pair_ref[key])*textcount[key])
         else:
             error += pair_ref[key]
     return error
@@ -118,20 +119,20 @@ def decipher(ciphertext, offsets, perm):
 def hill_climb(ciphertext):
     # attack rolling and columnar transposition separately
     # blatantly stolen from https://www.cipherchallenge.org/wp-content/uploads/2022/09/A-Book-on-Classical-Cryptography-by-Madness.pdf # noqa: E501
-    keylen = 10
+    keylen = 5
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVXYZ"
     parent_shifts = [0, 0, 0, 0, 0]
     parent_perms = [0, 1, 2, 3, 4]
     best_fitness = fitness(ciphertext)
     count = 0
-    cutoff = .1
+    cutoff = -.5
     while count < 1_000:
         child_shifts = parent_shifts
         child_perms = parent_perms
         choice = random.choice([0, 1, 2, 3])
         if choice == 0:
             # change one member of the child shift key to a random number in 0, ..., 25
-            child_shifts[random.randint(0, 4)] = random.randint(0, 25)
+            child_shifts[random.randint(0, 4)] = random.randint(0, 24)
         elif choice == 1:
             # swap two randomly selected members of the child permutation
             a, b = random.sample([0, 1, 2, 3, 4], 2)
@@ -186,4 +187,5 @@ encrypted = cadenus_encrypt("""TO BE OR NOT TO BE THAT IS THE QUESTION WHETHER T
 
 assert (cadenus_decrypt(encrypted, "oratio") == "TOBEORNOTTOBETHATISTHEQUESTIONWHETHERTISNOBLERINTHEMINDTOSUFFERTHESLINGSANDARROWSOFOUTRAGEOUSFORTUNEORTOTAKEARMSAGAINSTASEAOFTROUBLESANDBYOPPOSINGENDTHEMTODIETOSLEEPNOMOREANDBYASLEEPTOSAYWEENDTHEHEARTACHEANDTHETHOUSANDNATURALSHOCKSTHATFLESHISHEIRTOTISACONSUMMATIONDEVOUTLYTOBEWISHDTODIETOSLEEPTOSLEEPPERCHANCETODREAMAYTHERESTHERUBFORINTHATSLEEPOFDEATHWHATDREAMSMAYCOMEWUTEVUH")  # noqa: E501
 
-# cadenus_encrypt(open("final.txt").read().replace(" ", ""), "wowzer")
+print(hill_climb(encrypted))
+# print(cadenus_decrypt(open("final.txt").read().replace(" ", ""), "lzyix"))
