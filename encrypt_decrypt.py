@@ -114,10 +114,14 @@ def normalised_common_ref():
     return normalised_ref
 
 
-def pair_normalised_common_ref():
+def nwise(text: str, n) -> Iterable[tuple[str, ...]]:
+    return (tuple(text[x:x+n]) for x in range(len(text)-n))
+
+
+def pair_normalised_common_ref(n=2):
     sample = load_text("holmes-gutenberg").lower()
-    filter_text = [char for char in sample if char not in ("\n")]
-    reference = Counter(pairwise(filter_text)).most_common()
+    filter_text = "".join([char for char in sample if char not in ("\n")])
+    reference = Counter(nwise(filter_text, n)).most_common()
     total_pairs = len(filter_text)-1
     normalised_ref = dict([(pair, count/total_pairs)
                            for (pair, count) in reference])
